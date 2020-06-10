@@ -1,2 +1,2 @@
 # backend-deployment
-Deploying the API backend of project Mesto
+Deploying the API backend for project Mesto
