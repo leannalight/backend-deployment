@@ -11,6 +11,7 @@ const { createUser, login } = require('./controllers/users');
 
 const { PORT = 3030 } = process.env;
 const auth = require('./middlewares/auth');
+const { errorHandler } = require('./middlewares/error-handler');
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -40,19 +41,14 @@ app.use(limiter);
 app.post('/signup', createUser);
 app.post('/signin', login);
 
-// авторизация
-app.use(auth);
 // роуты, которым авторизация нужна
 app.use('/users', usersRouter);
 app.use('/cards', cardsRouter);
+// авторизация
+app.use(auth);
+
 // здесь обрабатываются все ошибки
-app.use((err, req, res, next) => {
-  const { statusCode = 500, message } = err;
-  res.status(statusCode).send({
-    // проверяем статус и выставляем сообщение в зависимости от него
-    message: statusCode === 500 ? 'На сервере произошла ошибка' : message,
-  });
-});
+app.use(errorHandler);
 
 app.all('*', (req, res) => {
   res.status(404).send({ message: 'Запрашиваемый ресурс не найден' });
