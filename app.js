@@ -13,6 +13,8 @@ const { PORT = 3030 } = process.env;
 const auth = require('./middlewares/auth');
 const { errorHandler } = require('./middlewares/error-handler');
 
+const { requestLogger, errorLogger } = require('./middlewares/logger');
+
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
@@ -37,7 +39,8 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(helmet());
 app.use(limiter);
 
-// роуты не требующие авторизации (регистрация и логин)
+app.use(requestLogger); // подключаем логгер запросов
+// за ним идут все обработчики роутов
 app.post('/signup', createUser);
 app.post('/signin', login);
 
@@ -47,6 +50,8 @@ app.use('/cards', cardsRouter);
 // авторизация
 app.use(auth);
 
+app.use(errorLogger); // подключаем логгер ошибок
+app.use(errors()); // обработчик ошибок celebrate
 // здесь обрабатываются все ошибки
 app.use(errorHandler);
 

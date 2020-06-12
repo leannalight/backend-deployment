@@ -12,5 +12,5 @@ module.exports.errorHandler = (error, req, res, next) => {
   const { message } = error || 'Неизвестная ошибка';
   const errorStatus = errorCodes[error.name] || 500;
   res.status(errorStatus).send({ errorName, message });
-  next();
+  return next();
 };
