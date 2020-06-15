@@ -41,6 +41,13 @@ app.use(limiter);
 
 app.use(requestLogger); // подключаем логгер запросов
 // за ним идут все обработчики роутов
+
+app.get('/crash-test', () => {
+  setTimeout(() => {
+      throw new Error('Сервер сейчас упадёт');
+  }, 0);
+});
+
 app.post('/signup', createUser);
 app.post('/signin', login);
 
