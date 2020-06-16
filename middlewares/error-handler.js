@@ -1,16 +1,18 @@
+const mongoose = require('mongoose');
 
 module.exports.errorHandler = (error, req, res, next) => {
-  const errorCodes = {
-    NotFoundError: 404,
-    CastError: 400,
-    ValidationError: 400,
-    Unauthorized: 401,
-    Forbidden: 403,
-    Conflict: 409,
-  };
-  const errorName = error.name;
-  const { message } = error || 'Неизвестная ошибка';
-  const errorStatus = errorCodes[error.name] || 500;
-  res.status(errorStatus).send({ errorName, message });
-  return next();
+  const { code } = error;
+  let { statusCode = 500, message } = error;
+  if
+  (error instanceof mongoose.Error.ValidationError || error instanceof mongoose.Error.CastError) {
+    statusCode = 400;
+  }
+  if (code === 11000) {
+    statusCode = 409;
+    message = 'Данный email уже зарегистрирован';
+  }
+  res.status(statusCode).send({
+    message: statusCode === 500 ? 'Произошла ошибка' : message,
+  });
+  next();
 };

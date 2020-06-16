@@ -1,61 +1,35 @@
 const Card = require('../models/card');
+const NotFoundError = require('../errors/not-found-err');
+const ForbiddenError = require('../errors/forbidden-err');
 
-module.exports.getCards = (req, res) => {
+module.exports.getCards = (req, res, next) => {
   Card.find({})
     .populate('owner')
-    .then((cards) => {
-      if (cards.length === 0) {
-        return res.send({ data: cards });
-      }
-      return res.send({ data: cards });
-    })
-    .catch((error) => {
-      if (error.name === 'ValidationError') {
-        return res.status(400).send({ message: error.message });
-      }
-      if (error.name === 'CastError') {
-        return res.status(400).send({ message: error.message });
-      }
-      return res.status(500).send({ message: error.message });
-    });
+    .then((cards) => res.send({ data: cards }))
+    .catch(next);
 };
 
-module.exports.createCard = (req, res) => {
+module.exports.createCard = (req, res, next) => {
   const { name, link } = req.body;
+  const owner = req.user._id;
 
-  Card.create({ name, link, owner: req.user._id })
+  Card.create({ name, link, owner })
     .then((card) => res.send({ data: card }))
-    .catch((error) => {
-      if (error.name === 'ValidationError') {
-        return res.status(400).send({ message: error.message });
-      }
-      if (error.name === 'CastError') {
-        return res.status(400).send({ message: error.message });
-      }
-      return res.status(500).send({ message: error.message });
-    });
+    .catch(next);
 };
 
-module.exports.deleteCardbyId = (req, res) => {
+module.exports.deleteCardbyId = (req, res, next) => {
   const { cardId } = req.params;
   Card.findById(cardId).populate('owner')
+    .orFail(() => {
+      throw new NotFoundError('Карточка не найдена');
+    })
     .then((card) => {
-      if (!card) {
-        return res.status(404).send({ message: 'Карточка не найдена' });
-      }
       if (card.owner._id.toString() !== req.user._id) {
-        return res.status(403).send({ message: 'Доступ запрещён' });
+        throw new ForbiddenError('Доступ запрещён');
       }
       return card.remove()
         .then(() => res.send({ data: card }));
     })
-    .catch((error) => {
-      if (error.name === 'ValidationError') {
-        return res.status(400).send({ message: error.message });
-      }
-      if (error.name === 'CastError') {
-        return res.status(400).send({ message: error.message });
-      }
-      return res.status(500).send({ message: error.message });
-    });
+    .catch(next);
 };

@@ -2,6 +2,7 @@ const express = require('express');
 require('dotenv').config();
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
+const { errors } = require('celebrate');
 
 const app = express();
 const mongoose = require('mongoose');
@@ -44,7 +45,7 @@ app.use(requestLogger); // подключаем логгер запросов
 
 app.get('/crash-test', () => {
   setTimeout(() => {
-      throw new Error('Сервер сейчас упадёт');
+    throw new Error('Сервер сейчас упадёт');
   }, 0);
 });
 
