@@ -2,19 +2,19 @@ const express = require('express');
 require('dotenv').config();
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
-const { errors } = require('celebrate');
-
-const app = express();
+const { Joi, celebrate, errors } = require('celebrate');
+const validator = require('validator');
 const mongoose = require('mongoose');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const { createUser, login } = require('./controllers/users');
-
-const { PORT = 3030 } = process.env;
 const auth = require('./middlewares/auth');
 const { errorHandler } = require('./middlewares/error-handler');
-
 const { requestLogger, errorLogger } = require('./middlewares/logger');
+
+const app = express();
+
+const { PORT = 3030 } = process.env;
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -34,14 +34,20 @@ mongoose.connect('mongodb://localhost:27017/mestodb', {
   // eslint-disable-next-line no-console
   .catch((error) => console.log(error));
 
+const urlValidate = (link) => {
+  if (!validator.isURL(link)) {
+    throw new Error('invalid link');
+  }
+  return link;
+};
+
 app.use(cookieParser());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(helmet());
 app.use(limiter);
 
-app.use(requestLogger); // подключаем логгер запросов
-// за ним идут все обработчики роутов
+app.use(requestLogger);
 
 app.get('/crash-test', () => {
   setTimeout(() => {
@@ -49,18 +55,29 @@ app.get('/crash-test', () => {
   }, 0);
 });
 
-app.post('/signup', createUser);
-app.post('/signin', login);
-
+app.post('/signup', celebrate({
+  body: Joi.object().keys({
+    name: Joi.string().required().min(2).max(30),
+    about: Joi.string().required().min(2).max(30),
+    avatar: Joi.string().required().custom(urlValidate),
+    email: Joi.string().required().email(),
+    password: Joi.string().required().min(6),
+  }),
+}), createUser);
+app.post('/signin', celebrate({
+  body: Joi.object().keys({
+    email: Joi.string().required().email(),
+    password: Joi.string().required().min(6),
+  }),
+}), login);
+// авторизация
+app.use(auth);
 // роуты, которым авторизация нужна
 app.use('/users', usersRouter);
 app.use('/cards', cardsRouter);
-// авторизация
-app.use(auth);
 
-app.use(errorLogger); // подключаем логгер ошибок
-app.use(errors()); // обработчик ошибок celebrate
-// здесь обрабатываются все ошибки
+app.use(errorLogger);
+app.use(errors());
 app.use(errorHandler);
 
 app.all('*', (req, res) => {
