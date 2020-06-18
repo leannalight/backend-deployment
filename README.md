@@ -1,14 +1,14 @@
 # backend-deployment
 
-## Актуальная версия v0.0.1
+## Актуальная версия v0.0.2
 
 Практическая работа 15. Изучение серверного программирования на node.js с использованием express.js. Финальная работа, в которой доделываем бэкенд проекта Mesto и деплоим на удалённый сервер
 
-**Backend развернут по IP - адресу 84.201.153.161** [**по ссылке**](https://84.201.153.161/)
+**Backend развернут по IP - адресу 84.201.153.161** [**по ссылке**](https://84.201.136.161/)
 
-**И доступен на домене** [**https:/api.newmestoapp.ga/**](https:/api.newmestoapp.ga/)
+**И доступен на домене** [**https:/api.newmestoapp.ga/**](https:/api.mestoproject.cf/)
 
-**Front доступен по адресу** [**https:/newmestoapp.ga/**](https:/newmestoapp.ga/)
+**Front доступен по адресу** [**https:/newmestoapp.ga/**](https:/mestoproject.cf/)
 
 ## Технологии:
 
