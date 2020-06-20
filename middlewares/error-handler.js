@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-
+// eslint-disable-next-line no-unused-vars
 module.exports.errorHandler = (error, req, res, next) => {
   const { code } = error;
   let { statusCode = 500, message } = error;
@@ -14,5 +14,4 @@ module.exports.errorHandler = (error, req, res, next) => {
   res.status(statusCode).send({
     message: statusCode === 500 ? 'Произошла ошибка' : message,
   });
-  next();
 };
