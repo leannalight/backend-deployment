@@ -73,16 +73,17 @@ app.post('/signin', celebrate({
   }),
 }), login);
 
-app.all('*', (req, res) => {
-  res.status(404).send({ message: 'Запрашиваемый ресурс не найден' });
-});
-
 app.use(auth);
 app.use('/users', usersRouter);
 app.use('/cards', cardsRouter);
 
 app.use(errorLogger);
 app.use(errors());
+
+app.all('*', (req, res) => {
+  res.status(404).send({ message: 'Запрашиваемый ресурс не найден' });
+});
+
 app.use(errorHandler);
 
 app.listen(PORT, () => {
