@@ -16,13 +16,9 @@ module.exports.getUsers = (req, res, next) => {
 
 module.exports.getUserbyId = (req, res, next) => {
   User.findById(req.params.id)
-    .orFail(new NotFoundError('Пользовательс не найден'))
+    .orFail(new NotFoundError('Пользователь не найден'))
     .then((user) => {
-      if (!user) {
-        throw new NotFoundError('Пользователь не найден');
-      } else {
-        res.send({ data: user });
-      }
+      res.send({ data: user });
     })
     .catch(next);
 };
@@ -49,6 +45,7 @@ module.exports.login = (req, res, next) => {
       res.cookie('jwt', token, {
         maxAge: 3600000 * 24 * 7,
         httpOnly: true,
+        sameSite: true,
       });
       res.send({ token });
     })
