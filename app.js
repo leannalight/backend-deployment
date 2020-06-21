@@ -3,17 +3,19 @@ require('dotenv').config();
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const { Joi, celebrate, errors } = require('celebrate');
+
 const validator = require('validator');
 const mongoose = require('mongoose');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const { createUser, login } = require('./controllers/users');
+
 const auth = require('./middlewares/auth');
-const { errorHandler } = require('./middlewares/error-handler');
+const { createUser, login } = require('./controllers/users');
 const { requestLogger, errorLogger } = require('./middlewares/logger');
 
-const app = express();
+const { errorHandler } = require('./middlewares/error-handler');
 
+const app = express();
 const { PORT = 3000 } = process.env;
 
 const limiter = rateLimit({
@@ -44,9 +46,9 @@ const urlValidate = (link) => {
 app.use(cookieParser());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+
 app.use(helmet());
 app.use(limiter);
-
 app.use(requestLogger);
 
 app.get('/crash-test', () => {
@@ -70,19 +72,18 @@ app.post('/signin', celebrate({
     password: Joi.string().required().min(6),
   }),
 }), login);
-// авторизация
+
+app.all('*', (req, res) => {
+  res.status(404).send({ message: 'Запрашиваемый ресурс не найден' });
+});
+
 app.use(auth);
-// роуты, которым авторизация нужна
 app.use('/users', usersRouter);
 app.use('/cards', cardsRouter);
 
 app.use(errorLogger);
 app.use(errors());
 app.use(errorHandler);
-
-app.all('*', (req, res) => {
-  res.status(404).send({ message: 'Запрашиваемый ресурс не найден' });
-});
 
 app.listen(PORT, () => {
   // eslint-disable-next-line no-console
