@@ -14,6 +14,7 @@ const { createUser, login } = require('./controllers/users');
 const { requestLogger, errorLogger } = require('./middlewares/logger');
 
 const { errorHandler } = require('./middlewares/error-handler');
+const NotFoundError = require('./errors/not-found-err');
 
 const app = express();
 const { PORT = 3000 } = process.env;
@@ -80,8 +81,12 @@ app.use('/cards', cardsRouter);
 app.use(errorLogger);
 app.use(errors());
 
-app.all('*', (req, res) => {
-  res.status(404).send({ message: 'Запрашиваемый ресурс не найден' });
+app.all('*', (req, res, next) => {
+  try {
+    throw new NotFoundError('Запрашиваемый ресурс не найден');
+  } catch (error) {
+    next(error);
+  }
 });
 
 app.use(errorHandler);
