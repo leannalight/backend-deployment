@@ -2,15 +2,22 @@ const express = require('express');
 require('dotenv').config();
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
+const { Joi, celebrate, errors } = require('celebrate');
 
-const app = express();
+const validator = require('validator');
 const mongoose = require('mongoose');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const { createUser, login } = require('./controllers/users');
 
-const { PORT = 3030 } = process.env;
 const auth = require('./middlewares/auth');
+const { createUser, login } = require('./controllers/users');
+const { requestLogger, errorLogger } = require('./middlewares/logger');
+
+const { errorHandler } = require('./middlewares/error-handler');
+const NotFoundError = require('./errors/not-found-err');
+
+const app = express();
+const { PORT = 3000 } = process.env;
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -30,25 +37,59 @@ mongoose.connect('mongodb://localhost:27017/mestodb', {
   // eslint-disable-next-line no-console
   .catch((error) => console.log(error));
 
+const urlValidate = (link) => {
+  if (!validator.isURL(link)) {
+    throw new Error('invalid link');
+  }
+  return link;
+};
+
 app.use(cookieParser());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+
 app.use(helmet());
 app.use(limiter);
+app.use(requestLogger);
 
-// роуты не требующие авторизации (регистрация и логин)
-app.post('/signup', createUser);
-app.post('/signin', login);
+app.get('/crash-test', () => {
+  setTimeout(() => {
+    throw new Error('Сервер сейчас упадёт');
+  }, 0);
+});
 
-// авторизация
+app.post('/signup', celebrate({
+  body: Joi.object().keys({
+    name: Joi.string().required().min(2).max(30),
+    about: Joi.string().required().min(2).max(30),
+    avatar: Joi.string().required().custom(urlValidate),
+    email: Joi.string().required().email(),
+    password: Joi.string().required().min(6),
+  }),
+}), createUser);
+app.post('/signin', celebrate({
+  body: Joi.object().keys({
+    email: Joi.string().required().email(),
+    password: Joi.string().required().min(6),
+  }),
+}), login);
+
 app.use(auth);
-// роуты, которым авторизация нужна
 app.use('/users', usersRouter);
 app.use('/cards', cardsRouter);
 
-app.all('*', (req, res) => {
-  res.status(404).send({ message: 'Запрашиваемый ресурс не найден' });
+app.use(errorLogger);
+app.use(errors());
+
+app.all('*', (req, res, next) => {
+  try {
+    throw new NotFoundError('Запрашиваемый ресурс не найден');
+  } catch (error) {
+    next(error);
+  }
 });
+
+app.use(errorHandler);
 
 app.listen(PORT, () => {
   // eslint-disable-next-line no-console
